@@ -1,4 +1,4 @@
-FROM node:22.23.4-alpine3.23@sha256:206878a60dc7014193f418ab9259b6110c15fbd514b3044a267be706509944e4 AS base
+FROM node:22.23.4-alpine3.23@sha256:2cfe8c19bd3df0192ad5dfd2e13e86567743ffa1eb614e750a706891f19606af AS base
 ARG SOURCE_DATE_EPOCH
 ARG TARGETPLATFORM
 ENV TARGETPLATFORM=${TARGETPLATFORM:-linux/amd64}
@@ -36,13 +36,16 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store CYPRESS_INSTALL_BINARY=0 pnpm 
 
 RUN pnpm build
 
-FROM node:22.23.4-alpine3.23@sha256:206878a60dc7014193f418ab9259b6110c15fbd514b3044a267be706509944e4
+FROM node:22.23.4-alpine3.23@sha256:2cfe8c19bd3df0192ad5dfd2e13e86567743ffa1eb614e750a706891f19606af
 ARG SOURCE_DATE_EPOCH
 ARG COMMIT_TAG
 ENV NODE_ENV=production
 ENV COMMIT_TAG=${COMMIT_TAG}
 
-RUN apk add --no-cache tzdata
+# The production container starts Node directly and does not need package managers.
+RUN apk add --no-cache tzdata && \
+  rm -rf /usr/local/lib/node_modules /opt/yarn-v1.22.22 && \
+  rm -f /usr/local/bin/corepack /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg
 
 USER node:node
 
@@ -76,4 +79,4 @@ RUN touch config/DOCKER && \
 
 EXPOSE 5055
 
-CMD [ "npm", "start" ]
+CMD [ "node", "dist/index.js" ]
